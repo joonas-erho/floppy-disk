@@ -25,6 +25,7 @@
 
             // Create a group for the racks for collision detection
             this.racks = this.physics.add.group()
+            this.racks.setVelocityX(-currentSpeed)
 
             // Create score counter text
             this.scoreText = this.add.text(20, 10, '0', { font: '24px Consolas', color: '#00ff00', strokeThickness: 10, stroke: '#000000' });
@@ -56,7 +57,7 @@
                     this.lose()
                 }, null, this)
 
-            // Every 2,5 seconds, create new racks
+            // Every 1,5 seconds, create new racks
             rackSpawnTimer += delta
             if (rackSpawnTimer > 1500) {
                 rackSpawnTimer -= 1500
@@ -65,29 +66,23 @@
 
             // Rotate the disk cause it looks funny
             this.disk.rotation += 0.01
-
-            this.racks.getChildren().forEach((child) => {
-                if (child.x < -32) {
-                    score += 1
-                    child.destroy();
-                }
-                this.scoreText.text = score
-        });
         }
 
         createRacks() {
             let rackHeight = Phaser.Math.Between(heightRange[0], heightRange[1])
             let distance = Phaser.Math.Between(distanceBetweenPipes[0], distanceBetweenPipes[1])
             let spawnLocation = Phaser.Math.Between(spawnPosRange[0], spawnPosRange[1])
-
+            
             let rack = this.physics.add.sprite(game.config.width + spawnLocation, game.config.height + rackHeight, 'bottomrack')
             rack.setScale(4)
-            rack.setVelocityX(-currentSpeed)
-
+            
             let child = this.physics.add.sprite(game.config.width + spawnLocation, game.config.height + rackHeight + distance, 'toprack')
-            child.setScale(4)
-            child.setVelocityX(-currentSpeed)
-            rack.add(child)
+            child.setScale(4) 
+
+            this.racks.add(rack)
+            this.racks.add(child)
+            child.body.setVelocityX(-currentSpeed)
+            rack.body.setVelocityX(-currentSpeed)
         }
 
         lose() {
