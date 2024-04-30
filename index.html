@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+<body>
+    <script>
+    class Gameplay extends Phaser.Scene
+    {
+        constructor(){
+            super('Gameplay')
+        }
+        preload() {
+            // Load textures
+            this.load.image('disk', './assets/disk.png')
+            this.load.image('bottomrack', './assets/bottom_rack.png')
+            this.load.image('toprack', './assets/top_rack.png')
+        }
+
+        create() {   
+            // Create player "floppy disk"
+            this.disk = this.physics.add.sprite(64, game.config.height / 2, 'disk')
+            this.disk.setScale(4)
+            this.disk.body.gravity.y = gravity
+
+            // Create a group for the racks for collision detection
+            this.racks = this.physics.add.group()
+
+            // Create score counter text
+            this.scoreText = this.add.text(20, 10, '0', { font: '24px Consolas', color: '#00ff00', strokeThickness: 10, stroke: '#000000' });
+            this.scoreText.setScale(2)
+            this.scoreText.setDepth(1)
+            
+            // Create controls
+            // Mouse click
+            this.input.on('pointerdown', () => {
+                this.disk.body.velocity.y = -jumpStrength
+            })
+
+            // Spacebar press
+            this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => { this.disk.body.velocity.y = -jumpStrength })
+        }
+
+        update(time, delta) {
+            // If disk reaches either end of screen, player loses
+            if (this.disk.y > game.config.height || this.disk.y < 0) {
+                this.lose();
+            }
+
+            // Same also happens on contact with any item inside of the racks
+            // physics group (so any rack)
+            this.physics.world.collide(
+                this.disk,
+                this.racks,
+                function(){
+                    this.lose()
+                }, null, this)
+
+            // Every 2,5 seconds, create new racks
+            rackSpawnTimer += delta
+            if (rackSpawnTimer > 1500) {
+                rackSpawnTimer -= 1500
+                this.createRacks()
+            }
+
+            // Rotate the disk cause it looks funny
+            this.disk.rotation += 0.01
+
+            this.racks.getChildren().forEach((child) => {
+                if (child.x < -32) {
+                    score += 1
+                    child.destroy();
+                }
+                this.scoreText.text = score
+        });
+        }
+
+        createRacks() {
+            let rackHeight = Phaser.Math.Between(heightRange[0], heightRange[1])
+            let distance = Phaser.Math.Between(distanceBetweenPipes[0], distanceBetweenPipes[1])
+            let spawnLocation = Phaser.Math.Between(spawnPosRange[0], spawnPosRange[1])
+
+            let rack = this.physics.add.sprite(game.config.width + spawnLocation, game.config.height + rackHeight, 'bottomrack')
+            rack.setScale(4)
+            rack.setVelocityX(-currentSpeed)
+
+            let child = this.physics.add.sprite(game.config.width + spawnLocation, game.config.height + rackHeight + distance, 'toprack')
+            child.setScale(4)
+            child.setVelocityX(-currentSpeed)
+            rack.add(child)
+        }
+
+        lose() {
+            this.scene.start('Gameplay')
+        }
+    }
+
+    const config = {
+        type: Phaser.AUTO,
+        width: 600,
+        height: 896,
+        scene: Gameplay,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: {
+                    y: 0
+                }
+            }
+        },
+        pixelArt: true
+    };
+
+    // Variables affecting the speeds of the disk
+    const gravity = 800
+    const horizontalSpeed = 200
+    const jumpStrength = 400
+
+    // Variables for server rack (pipe) spawning
+    const heightRange = [-150, 350]
+    const distanceBetweenPipes = [-1216, -1280]
+    const spawnPosRange = [64, 128]
+
+    let currentSpeed = horizontalSpeed
+
+    let score = 0
+    let rackSpawnTimer = 0
+
+    const game = new Phaser.Game(config);
+    </script>
+</body>
+</html>
